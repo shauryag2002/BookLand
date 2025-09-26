@@ -4,6 +4,7 @@ import { createStackNavigator } from '@react-navigation/stack';
 import { StatusBar } from 'expo-status-bar';
 import HomeScreen from './screens/HomeScreen';
 import BookDetailScreen from './screens/BookDetailScreen';
+import BookReaderScreen from './screens/BookReaderScreen';
 
 // Import NativeWind styles
 import './global.css';
@@ -37,6 +38,14 @@ export default function App() {
           options={{ 
             title: 'Book Details',
             headerBackTitleVisible: false,
+          }}
+        />
+        <Stack.Screen 
+          name="BookReader" 
+          component={BookReaderScreen}
+          options={{ 
+            headerShown: false,
+            presentation: 'fullScreenModal',
           }}
         />
       </Stack.Navigator>
