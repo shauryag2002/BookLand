@@ -17,6 +17,9 @@ const useBookStore = create((set, get) => ({
   isDownloading: false,
   downloadProgress: 0,
   
+  // Favorite books
+  favoriteBooks: [],
+  
   // Book reader state
   currentlyReading: null,
   readingProgress: {},
@@ -112,6 +115,61 @@ const useBookStore = create((set, get) => ({
     } catch (error) {
       console.error('Error loading reading progress:', error);
     }
+  },
+
+  // Favorites management
+  addFavoriteBook: async (book) => {
+    const { favoriteBooks } = get();
+    const isAlreadyFavorite = favoriteBooks.some(fav => fav.id === book.id);
+    if (!isAlreadyFavorite) {
+      const updatedFavorites = [...favoriteBooks, book];
+      set({ favoriteBooks: updatedFavorites });
+      
+      try {
+        await AsyncStorage.setItem('favoriteBooks', JSON.stringify(updatedFavorites));
+      } catch (error) {
+        console.error('Error saving favorite book:', error);
+      }
+    }
+  },
+
+  removeFavoriteBook: async (bookId) => {
+    const { favoriteBooks } = get();
+    const updatedFavorites = favoriteBooks.filter(book => book.id !== bookId);
+    set({ favoriteBooks: updatedFavorites });
+    
+    try {
+      await AsyncStorage.setItem('favoriteBooks', JSON.stringify(updatedFavorites));
+    } catch (error) {
+      console.error('Error removing favorite book:', error);
+    }
+  },
+
+  toggleFavorite: async (book) => {
+    const { favoriteBooks } = get();
+    const isAlreadyFavorite = favoriteBooks.some(fav => fav.id === book.id);
+    
+    if (isAlreadyFavorite) {
+      await get().removeFavoriteBook(book.id);
+    } else {
+      await get().addFavoriteBook(book);
+    }
+  },
+
+  loadFavoriteBooks: async () => {
+    try {
+      const stored = await AsyncStorage.getItem('favoriteBooks');
+      if (stored) {
+        set({ favoriteBooks: JSON.parse(stored) });
+      }
+    } catch (error) {
+      console.error('Error loading favorite books:', error);
+    }
+  },
+
+  isFavorite: (bookId) => {
+    const { favoriteBooks } = get();
+    return favoriteBooks.some(book => book.id === bookId);
   },
 }));
 
