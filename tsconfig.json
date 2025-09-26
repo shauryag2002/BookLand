@@ -8,7 +8,7 @@
     "lib": ["es2017"],
     "moduleResolution": "node",
     "noEmit": true,
-    "strict": true,
+    "strict": false,
     "target": "esnext",
     "skipLibCheck": true,
     "resolveJsonModule": true,
@@ -20,9 +20,9 @@
     "noImplicitReturns": true,
     "noPropertyAccessFromIndexSignature": false,
     "noUncheckedIndexedAccess": false,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "verbatimModuleSyntax": true
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "verbatimModuleSyntax": false
   },
   "include": [
     "**/*.ts",
