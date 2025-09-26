@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, FlatList, SafeAreaView, StatusBar, TouchableOpacity, RefreshControl } from 'react-native';
-import BookCard from '../components/BookCard';
+import EnhancedBookCard from '../components/EnhancedBookCard';
 import useBookStore from '../store/bookStore';
 import { searchBooksOpenLibrary, getTrendingBooks } from '../services/openLibraryApi';
 
@@ -13,7 +13,8 @@ const HomeScreen = ({ navigation }) => {
     setSearchQuery, 
     setLoading, 
     loadDownloadedBooks,
-    loadReadingProgress 
+    loadReadingProgress,
+    loadFavoriteBooks 
   } = useBookStore();
   
   const [refreshing, setRefreshing] = useState(false);
@@ -27,9 +28,10 @@ const HomeScreen = ({ navigation }) => {
   const initializeApp = async () => {
     setLoading(true);
     try {
-      // Load downloaded books and reading progress from storage
+      // Load downloaded books, reading progress, and favorites from storage
       await loadDownloadedBooks();
       await loadReadingProgress();
+      await loadFavoriteBooks();
       
       // Load trending books as default
       await loadTrendingBooks();
@@ -129,18 +131,10 @@ const HomeScreen = ({ navigation }) => {
       <StatusBar style="auto" />
       <View className="p-4">
         {/* Header */}
-        <View className="flex-row items-center justify-between mb-6">
+        <View className="mb-6">
           <Text className="text-2xl font-bold text-gray-900 dark:text-white">
             📚 BookLand
           </Text>
-          <TouchableOpacity
-            onPress={() => {/* Navigate to downloaded books */}}
-            className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900"
-          >
-            <Text className="text-blue-800 dark:text-blue-200 text-sm font-medium">
-              My Books
-            </Text>
-          </TouchableOpacity>
         </View>
 
         {/* Search Bar */}
@@ -181,9 +175,10 @@ const HomeScreen = ({ navigation }) => {
           data={filteredBooks}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
-            <BookCard 
+            <EnhancedBookCard 
               book={item} 
               onPress={() => handleBookPress(item)}
+              showFavoriteButton={true}
             />
           )}
           showsVerticalScrollIndicator={false}
