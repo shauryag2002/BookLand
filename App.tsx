@@ -29,6 +29,7 @@ const TabBarIcon: React.FC<TabBarIconProps> = ({ focused, icon, size = 20 }) => 
 function MainTabNavigator(): React.ReactElement {
   return (
     <Tab.Navigator
+      id={undefined}
       screenOptions={{
         headerShown: false,
         tabBarStyle: {
@@ -96,6 +97,7 @@ export default function App(): React.ReactElement {
     <NavigationContainer>
       <StatusBar style="auto" />
       <Stack.Navigator
+        id={undefined}
         initialRouteName="MainTabs"
         screenOptions={{
           headerStyle: {

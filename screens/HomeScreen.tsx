@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, FlatList, SafeAreaView, StatusBar, TouchableOpacity, RefreshControl } from 'react-native';
+import { View, Text, TextInput, FlatList, SafeAreaView, TouchableOpacity, RefreshControl } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
 import EnhancedBookCard from '../components/EnhancedBookCard';
 import useBookStore from '../store/bookStore';
 import { searchBooksOpenLibrary, getTrendingBooks } from '../services/openLibraryApi';
