@@ -17,12 +17,17 @@ const BookDetailScreen = ({ route, navigation }) => {
     addDownloadedBook, 
     setDownloading, 
     setDownloadProgress,
-    downloadedBooks 
+    downloadedBooks,
+    favoriteBooks,
+    toggleFavorite,
+    isFavorite 
   } = useBookStore();
 
   const isBookDownloaded = downloadedBooks.some(downloadedBook => 
     downloadedBook.id === enrichedBook.id
   );
+
+  const isBookFavorite = isFavorite(enrichedBook.id);
 
   useEffect(() => {
     // Enrich book data with Open Library details if we have the key
@@ -251,9 +256,12 @@ const BookDetailScreen = ({ route, navigation }) => {
               </TouchableOpacity>
             )}
             
-            <TouchableOpacity className="bg-gray-200 dark:bg-gray-700 rounded-lg py-4 px-6">
-              <Text className="text-gray-900 dark:text-white text-center text-lg font-semibold">
-                ❤️ Add to Wishlist
+            <TouchableOpacity 
+              className={`${isBookFavorite ? 'bg-red-600 dark:bg-red-500' : 'bg-gray-200 dark:bg-gray-700'} rounded-lg py-4 px-6`}
+              onPress={() => toggleFavorite(enrichedBook)}
+            >
+              <Text className={`${isBookFavorite ? 'text-white' : 'text-gray-900 dark:text-white'} text-center text-lg font-semibold`}>
+                {isBookFavorite ? '❤️ Remove from Favorites' : '🤍 Add to Favorites'}
               </Text>
             </TouchableOpacity>
           </View>
