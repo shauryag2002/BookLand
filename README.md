@@ -43,18 +43,27 @@ In the output, you'll find options to open the app in a
 
 ```
 ├── components/     # Reusable UI components
-│   └── BookCard.js # Enhanced book display component
+│   ├── BookCard.js # Enhanced book display component
+│   ├── EnhancedBookCard.tsx # Advanced book card with download options
+│   └── AnnasArchiveSearchDemo.tsx # Demo component for backend API testing
 ├── screens/       # App screens
 │   ├── HomeScreen.js          # Main screen with search and trending books
-│   ├── BookDetailScreen.js    # Enhanced book details with download
+│   ├── BookDetailScreen.js    # Enhanced book details with backend download
 │   └── BookReaderScreen.js    # In-app book reader
 ├── services/      # API and external services
 │   ├── openLibraryApi.js      # Open Library API integration
-│   └── annasArchiveApi.js     # Anna's Archive scraping service
+│   └── annasArchiveApi.js     # Anna's Archive scraping service (legacy)
+├── api/           # Backend API services
+│   ├── books.ts              # Legacy API functions
+│   ├── annasArchive.ts       # Anna's Archive backend API service
+│   └── useAnnasArchive.ts    # React hooks for API state management
 ├── store/         # State management
 │   └── bookStore.js           # Zustand store for app state
+├── types/         # TypeScript type definitions
+│   ├── book.ts               # Book and API response interfaces
+│   ├── components.ts         # Component prop interfaces
+│   └── store.ts              # Store state interfaces
 ├── assets/        # Images, fonts, etc.
-├── api/           # Legacy API functions
 └── App.js         # Main app entry point with navigation
 ```
 
@@ -66,10 +75,22 @@ In the output, you'll find options to open the app in a
 - Fallback to trending books when not searching
 
 ### 📚 Book Download & Reading
-- Integration with Anna's Archive for free book downloads
-- Support for multiple formats (PDF, EPUB)
-- Download progress tracking with cancellation support
+- **Backend Integration** with Anna's Archive API endpoints (`/api/annas/search?query=...`)
+- **TypeScript Service Layer** with strong type interfaces for book data and responses
+- Support for multiple formats (PDF, EPUB, MOBI, TXT, DOC, DOCX)
+- Advanced filtering by format, language, file size, and quality
+- Download progress tracking with real-time updates
+- Comprehensive error handling with user-friendly messages
 - In-app book reader with reading progress persistence
+
+### 🏗️ Backend API Integration
+- **RESTful API Service** (`api/annasArchive.ts`) for backend communication
+- **React Hooks** (`api/useAnnasArchive.ts`) for state management and UI integration
+- **Loading States** with progress tracking for all operations
+- **Error Handling** with retry logic and user-friendly error messages
+- **TypeScript Interfaces** for all API requests and responses
+- **Network Timeout Management** with proper abort controllers
+- **Format & Language Filtering** with validation
 
 ### 🎯 State Management
 - Zustand-powered state management for performance
@@ -85,3 +106,44 @@ In the output, you'll find options to open the app in a
 - Beautiful, mobile-first design with NativeWind
 - Dark mode support throughout the app
 - Smooth animations and loading states
+
+## APK Generation for Device Testing
+
+To generate an APK for direct device testing of the complete book search and download flow:
+
+### Quick Start (EAS Build - Recommended)
+```bash
+# Install EAS CLI
+npm install -g eas-cli
+
+# Login and configure
+eas login
+eas build:configure
+
+# Build APK for testing
+eas build --platform android --profile preview
+```
+
+### Local Build
+```bash
+# Install dependencies
+npm install
+
+# Run local Android build
+expo run:android
+```
+
+For detailed instructions, backend setup, and troubleshooting, see [APK_GENERATION_GUIDE.md](./APK_GENERATION_GUIDE.md).
+
+## Backend API Requirements
+
+The app integrates with Anna's Archive backend endpoints:
+
+- `GET /api/annas/search?query={search_term}` - Search for books
+- `GET /api/annas/download/{md5}/{format}` - Get download URL
+- `GET /api/annas/details/{md5}` - Get detailed book information
+
+Configure your backend URL in `.env`:
+```
+EXPO_PUBLIC_API_URL=https://your-backend-api.com
+```

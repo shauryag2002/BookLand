@@ -2,30 +2,34 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, Image, ScrollView, TouchableOpacity, SafeAreaView, Alert, Modal } from 'react-native';
 import useBookStore from '../store/bookStore';
 import { getBookDetails } from '../services/openLibraryApi';
-import { searchBooksAnnasArchive, getDownloadLinks, downloadBook } from '../services/annasArchiveApi';
-import type { BookDetailScreenProps, EnhancedBook } from '../types';
-
-interface DownloadOption {
-  title: string;
-  author: string;
-  format: string;
-  size: string;
-  language: string;
-  md5: string;
-  downloadLinks: string[];
-  mirrors?: string[];
-}
+import { useAnnasArchive, useAnnasArchiveUI } from '../api/useAnnasArchive';
+import type { BookDetailScreenProps, EnhancedBook, AnnasArchiveBook } from '../types';
 
 const BookDetailScreen: React.FC<BookDetailScreenProps> = ({ route, navigation }) => {
   const { book } = route.params;
   const [enrichedBook, setEnrichedBook] = useState<EnhancedBook>(book);
-  const [availableDownloads, setAvailableDownloads] = useState<DownloadOption[]>([]);
-  const [isLoadingDownloads, setIsLoadingDownloads] = useState<boolean>(false);
-  const [showDownloadModal, setShowDownloadModal] = useState<boolean>(false);
+  
+  // Use the new Anna's Archive hooks
+  const {
+    searchResults,
+    isSearching,
+    isDownloading,
+    downloadProgress,
+    searchError,
+    downloadError,
+    search,
+    download,
+    clearErrors
+  } = useAnnasArchive();
+  
+  const {
+    showDownloadModal,
+    selectedBook,
+    openDownloadModal,
+    closeDownloadModal
+  } = useAnnasArchiveUI();
   
   const { 
-    isDownloading, 
-    downloadProgress, 
     addDownloadedBook, 
     setIsDownloading,
     setDownloadProgress,
@@ -55,73 +59,82 @@ const BookDetailScreen: React.FC<BookDetailScreenProps> = ({ route, navigation }
     enrichBookData();
   }, [book]);
 
-  const handleDownload = async (): Promise<void> => {
-    setIsLoadingDownloads(true);
-    setShowDownloadModal(true);
-    
+  const handleDownload = async (): Promise<void> => {    
     try {
-      // Search for the book on Anna's Archive
-      const searchResults = await searchBooksAnnasArchive(
-        enrichedBook.title, 
-        enrichedBook.author
-      );
+      // Clear any previous errors
+      clearErrors();
       
-      if (searchResults.success && searchResults.results.length > 0) {
-        setAvailableDownloads(searchResults.results);
+      // Search for the book on Anna's Archive using the new backend API
+      const result = await search(`${enrichedBook.title} ${enrichedBook.author}`.trim());
+      
+      if (result.success && searchResults.length > 0) {
+        // Open the download modal with results
+        openDownloadModal(searchResults[0]); // Use the first result or let user choose
       } else {
-        Alert.alert('Not Found', 'This book is not available for download.');
-        setShowDownloadModal(false);
+        Alert.alert(
+          'Not Found', 
+          result.error || 'This book is not available for download.',
+          [{ text: 'OK', style: 'default' }]
+        );
       }
     } catch (error) {
       console.error('Error searching for downloads:', error);
-      Alert.alert('Error', 'Failed to search for downloads. Please try again.');
-      setShowDownloadModal(false);
-    } finally {
-      setIsLoadingDownloads(false);
+      Alert.alert(
+        'Search Error', 
+        'Failed to search for downloads. Please check your internet connection and try again.',
+        [{ text: 'OK', style: 'default' }]
+      );
     }
   };
 
-  const handleDownloadFormat = async (downloadOption: DownloadOption): Promise<void> => {
-    setShowDownloadModal(false);
+  const handleDownloadFormat = async (downloadBookOption: AnnasArchiveBook): Promise<void> => {
+    closeDownloadModal();
+    
+    // Update the global store's download state
     setIsDownloading(true);
     setDownloadProgress(0);
 
     try {
-      // Get download links
-      const linksResult = await getDownloadLinks(downloadOption.md5, downloadOption.format);
+      // Start download with the new backend API
+      const result = await download(downloadBookOption.md5, downloadBookOption.format);
       
-      if (!linksResult.success || linksResult.downloadLinks.length === 0) {
-        Alert.alert('Error', 'No download links available.');
-        setIsDownloading(false);
-        return;
-      }
-
-      // Start download with the first available link
-      const downloadResult = await downloadBook(
-        linksResult.downloadLinks[0].url,
-        (progress: number) => {
-          setDownloadProgress(progress);
-        }
-      );
-
-      if (downloadResult.success) {
-        // Add to downloaded books
+      if (result.success && result.result) {
+        // Create enhanced book object with download info
         const downloadedBook: EnhancedBook = {
           ...enrichedBook,
-          filePath: downloadResult.filePath,
-          fileName: downloadResult.fileName,
-          format: downloadOption.format,
+          md5: downloadBookOption.md5,
+          format: downloadBookOption.format,
+          size: downloadBookOption.size,
+          filePath: result.result.filePath,
+          fileName: result.result.fileName,
           downloadDate: new Date(),
         };
-        
+
+        // Add to downloaded books
         await addDownloadedBook(downloadedBook);
-        Alert.alert('Success', 'Book downloaded successfully!');
+        
+        Alert.alert(
+          'Download Complete', 
+          `Successfully downloaded "${downloadBookOption.title}"`,
+          [
+            { text: 'OK', style: 'default' },
+            { text: 'Open Book', style: 'default', onPress: () => handleReadBook() }
+          ]
+        );
       } else {
-        Alert.alert('Error', 'Download failed. Please try again.');
+        Alert.alert(
+          'Download Failed', 
+          result.error || 'The download could not be completed. Please try again.',
+          [{ text: 'OK', style: 'default' }]
+        );
       }
     } catch (error) {
       console.error('Error downloading book:', error);
-      Alert.alert('Error', 'Download failed. Please try again.');
+      Alert.alert(
+        'Download Error', 
+        'An error occurred during download. Please check your internet connection and try again.',
+        [{ text: 'OK', style: 'default' }]
+      );
     } finally {
       setIsDownloading(false);
       setDownloadProgress(0);
@@ -308,7 +321,7 @@ const BookDetailScreen: React.FC<BookDetailScreenProps> = ({ route, navigation }
         animationType="slide"
         transparent={true}
         visible={showDownloadModal}
-        onRequestClose={() => setShowDownloadModal(false)}
+        onRequestClose={closeDownloadModal}
       >
         <View className="flex-1 justify-center items-center bg-black/50">
           <View className="bg-white dark:bg-gray-800 rounded-lg p-6 m-4 max-w-sm w-full">
@@ -316,28 +329,42 @@ const BookDetailScreen: React.FC<BookDetailScreenProps> = ({ route, navigation }
               Download Options
             </Text>
             
-            {isLoadingDownloads ? (
+            {/* Show search error if any */}
+            {searchError && (
+              <View className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3 mb-4">
+                <Text className="text-red-800 dark:text-red-200 text-sm text-center">
+                  {searchError}
+                </Text>
+              </View>
+            )}
+            
+            {isSearching ? (
               <View className="py-8">
                 <Text className="text-center text-gray-600 dark:text-gray-400">
                   Searching for available formats...
                 </Text>
               </View>
-            ) : (
+            ) : searchResults.length > 0 ? (
               <ScrollView className="max-h-64">
-                {availableDownloads.map((download, index) => (
+                {searchResults.map((download, index) => (
                   <TouchableOpacity
-                    key={index}
+                    key={`${download.md5}-${index}`}
                     className="border border-gray-200 dark:border-gray-600 rounded-lg p-3 mb-2"
                     onPress={() => handleDownloadFormat(download)}
                   >
                     <View className="flex-row justify-between items-center">
                       <View className="flex-1">
                         <Text className="font-semibold text-gray-900 dark:text-white">
-                          {download.format}
+                          {download.format.toUpperCase()}
                         </Text>
                         <Text className="text-sm text-gray-600 dark:text-gray-400">
                           Size: {download.size} • {download.language}
                         </Text>
+                        {download.quality && (
+                          <Text className="text-xs text-gray-500 dark:text-gray-500">
+                            Quality: {download.quality}
+                          </Text>
+                        )}
                       </View>
                       <Text className="text-blue-600 dark:text-blue-400 font-medium">
                         Download
@@ -346,11 +373,26 @@ const BookDetailScreen: React.FC<BookDetailScreenProps> = ({ route, navigation }
                   </TouchableOpacity>
                 ))}
               </ScrollView>
+            ) : (
+              <View className="py-8">
+                <Text className="text-center text-gray-600 dark:text-gray-400">
+                  No download options found for this book.
+                </Text>
+              </View>
+            )}
+            
+            {/* Show download error if any */}
+            {downloadError && (
+              <View className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3 mb-4">
+                <Text className="text-red-800 dark:text-red-200 text-sm text-center">
+                  {downloadError}
+                </Text>
+              </View>
             )}
             
             <TouchableOpacity
               className="bg-gray-200 dark:bg-gray-700 rounded-lg py-3 px-4 mt-4"
-              onPress={() => setShowDownloadModal(false)}
+              onPress={closeDownloadModal}
             >
               <Text className="text-gray-800 dark:text-white text-center font-medium">
                 Cancel
