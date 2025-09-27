@@ -1055,6 +1055,10 @@ video {
   color: rgb(133 77 14 / var(--tw-text-opacity, 1));
 }
 
+.opacity-80 {
+  opacity: 0.8;
+}
+
 .shadow-lg {
   --tw-shadow: 0px 4px 10px rgba(0, 0, 0, 0.35);
   --tw-shadow-colored: 0px 4px 10px var(--tw-shadow-color);
