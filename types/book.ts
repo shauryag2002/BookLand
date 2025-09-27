@@ -81,6 +81,18 @@ export interface AnnasArchiveBook {
   language: string;
   md5: string;
   downloadLinks: string[];
+  // Additional fields that may come from backend
+  isbn?: string;
+  publisher?: string;
+  year?: number;
+  pages?: number;
+  description?: string;
+  coverUrl?: string;
+  // Backend-specific fields
+  mirrors?: string[];
+  quality?: 'high' | 'medium' | 'low';
+  uploadDate?: string;
+  fileExtension?: string;
 }
 
 export interface DownloadResult {
@@ -110,4 +122,13 @@ export interface BackendApiFilters {
     min?: number;
     max?: number;
   };
+  // Additional filter options
+  quality?: ('high' | 'medium' | 'low')[];
+  yearRange?: {
+    from?: number;
+    to?: number;
+  };
+  hasPreview?: boolean;
+  sortBy?: 'relevance' | 'date' | 'size' | 'title' | 'author';
+  sortOrder?: 'asc' | 'desc';
 }
